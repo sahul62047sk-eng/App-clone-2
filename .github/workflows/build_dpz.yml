@@ -27,7 +27,7 @@ jobs:
           git clone --depth 1 https://github.com/FBlackBox/BlackBox.git dpz_core
           cd dpz_core
           
-          # पूरे प्रोजेक्ट में strings.xml ढूंढकर ऐप का नाम DPZ Clone App करना
+          # ऐप का नाम बदलकर DPZ Clone App करना
           find . -path "*/src/main/res/*" -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">DPZ Clone App<\/string>/g' {} +
           
           # थीम और कलर कस्टमाइज़ करना (Electric Blue)
@@ -42,12 +42,19 @@ jobs:
       - name: Build DPZ APK
         run: |
           cd dpz_core
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ -n "$GRADLEW_PATH" ]; then
+            cd "$(dirname "$GRADLEW_PATH")"
+            chmod +x gradlew
+            ./gradlew assembleDebug --no-daemon
+          else
+            BUILD_GRADLE=$(find . -name "settings.gradle*" | head -n 1)
+            cd "$(dirname "$BUILD_GRADLE")"
+            gradle assembleDebug --no-daemon
+          fi
 
       - name: Upload DPZ Clone APK
         uses: actions/upload-artifact@v4
         with:
           name: DPZ-Clone-App
           path: dpz_core/**/build/outputs/apk/debug/*.apk
-          
