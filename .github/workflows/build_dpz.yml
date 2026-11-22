@@ -1,0 +1,51 @@
+name: Build DPZ Clone App
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Clone Base Virtual Engine
+        run: |
+          git clone --depth 1 https://github.com/CodingGay/BlackBox.git dpz_core
+          cd dpz_core
+          
+          # ऐप का नाम बदलकर DPZ Clone App करना
+          find app/src/main/res/ -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">DPZ Clone App<\/string>/g' {} +
+          
+          # थीम और कलर कस्टमाइज़ करना (Electric Blue & Dark Theme)
+          find app/src/main/res/ -name "colors.xml" -exec sed -i 's/#[0-9a-fA-F]\{6\}/#0066FF/g' {} +
+
+      - name: Apply Custom DPZ Logo
+        run: |
+          if [ -f "ic_launcher.png" ]; then
+            find dpz_core/app/src/main/res/mipmap-* -name "ic_launcher*.png" -exec cp ic_launcher.png {} \;
+          fi
+
+      - name: Build DPZ APK
+        run: |
+          cd dpz_core
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload DPZ Clone APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DPZ-Clone-App-Release
+          path: dpz_core/app/build/outputs/apk/release/*.apk
+          
