@@ -27,16 +27,16 @@ jobs:
           git clone --depth 1 https://github.com/FBlackBox/BlackBox.git dpz_core
           cd dpz_core
           
-          # ऐप का नाम बदलकर DPZ Clone App करना
-          find app/src/main/res/ -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">DPZ Clone App<\/string>/g' {} +
+          # पूरे प्रोजेक्ट में strings.xml ढूंढकर ऐप का नाम DPZ Clone App करना
+          find . -path "*/src/main/res/*" -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">DPZ Clone App<\/string>/g' {} +
           
           # थीम और कलर कस्टमाइज़ करना (Electric Blue)
-          find app/src/main/res/ -name "colors.xml" -exec sed -i 's/#[0-9a-fA-F]\{6\}/#0066FF/g' {} +
+          find . -path "*/src/main/res/*" -name "colors.xml" -exec sed -i 's/#[0-9a-fA-F]\{6\}/#0066FF/g' {} +
 
       - name: Apply Custom DPZ Logo
         run: |
           if [ -f "ic_launcher.png" ]; then
-            find dpz_core/app/src/main/res/mipmap-* -name "ic_launcher*.png" -exec cp ic_launcher.png {} \;
+            find dpz_core -path "*/src/main/res/mipmap-*" -name "ic_launcher*.png" -exec cp ic_launcher.png {} \;
           fi
 
       - name: Build DPZ APK
@@ -49,5 +49,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DPZ-Clone-App
-          path: dpz_core/app/build/outputs/apk/debug/*.apk
+          path: dpz_core/**/build/outputs/apk/debug/*.apk
           
