@@ -17,44 +17,231 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Accept Android Licenses & Setup NDK
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;21.4.7075529" "cmake;3.18.1"
+      - name: Accept Android Licenses
+        run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Clone & Customize DPZ Engine
+      - name: Generate DPZ Clone App Source Code
         run: |
-          git clone --depth 1 https://github.com/FBlackBox/BlackBox.git dpz_core
-          cd dpz_core
-          
-          # ऐप का नाम बदलकर DPZ Clone App करना
-          find . -path "*/src/main/res/*" -name "strings.xml" -exec sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">DPZ Clone App<\/string>/g' {} +
-          
-          # थीम और कलर कस्टमाइज़ करना (Electric Blue)
-          find . -path "*/src/main/res/*" -name "colors.xml" -exec sed -i 's/#[0-9a-fA-F]\{6\}/#0066FF/g' {} +
+          mkdir -p dpz_app/app/src/main/java/com/dpz/cloneapp
+          mkdir -p dpz_app/app/src/main/res/layout
+          mkdir -p dpz_app/app/src/main/res/values
+          mkdir -p dpz_app/app/src/main/res/mipmap-xxxhdpi
+
+          # 1. settings.gradle
+          cat << 'EOF' > dpz_app/settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "DPZ Clone App"
+          include ':app'
+          EOF
+
+          # 2. Root build.gradle
+          cat << 'EOF' > dpz_app/build.gradle
+          plugins {
+              id 'com.android.application' version '8.2.2' apply false
+          }
+          EOF
+
+          # 3. App build.gradle
+          cat << 'EOF' > dpz_app/app/build.gradle
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.dpz.cloneapp'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.dpz.cloneapp"
+                  minSdk 24
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      minifyEnabled false
+                  }
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+              implementation 'com.google.android.material:material:1.11.0'
+          }
+          EOF
+
+          # 4. AndroidManifest.xml
+          cat << 'EOF' > dpz_app/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:roundIcon="@mipmap/ic_launcher"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.DPZClone">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 5. strings.xml & colors.xml & themes.xml
+          cat << 'EOF' > dpz_app/app/src/main/res/values/strings.xml
+          <resources>
+              <string name="app_name">DPZ Clone App</string>
+          </resources>
+          EOF
+
+          cat << 'EOF' > dpz_app/app/src/main/res/values/colors.xml
+          <resources>
+              <color name="dpz_blue">#0066FF</color>
+              <color name="dpz_cyan">#00E5FF</color>
+              <color name="dpz_dark">#0D1117</color>
+              <color name="dpz_card">#161B22</color>
+              <color name="white">#FFFFFF</color>
+          </resources>
+          EOF
+
+          cat << 'EOF' > dpz_app/app/src/main/res/values/themes.xml
+          <resources>
+              <style name="Theme.DPZClone" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+                  <item name="colorPrimary">@color/dpz_blue</item>
+                  <item name="colorPrimaryVariant">@color/dpz_dark</item>
+                  <item name="colorOnPrimary">@color/white</item>
+                  <item name="android:windowBackground">@color/dpz_dark</item>
+                  <item name="android:statusBarColor">@color/dpz_dark</item>
+              </style>
+          </resources>
+          EOF
+
+          # 6. activity_main.xml (Custom Dark + Electric Blue UI)
+          cat << 'EOF' > dpz_app/app/src/main/res/layout/activity_main.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical"
+              android:background="@color/dpz_dark"
+              android:padding="16dp">
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="DPZ CLONE HUB"
+                  android:textColor="@color/dpz_cyan"
+                  android:textSize="22sp"
+                  android:textStyle="bold"
+                  android:layout_marginBottom="4dp" />
+
+              <TextView
+                  android:layout_width="wrap_content"
+                  android:layout_height="wrap_content"
+                  android:text="Select an app to launch in DPZ Space"
+                  android:textColor="#8B949E"
+                  android:textSize="13sp"
+                  android:layout_marginBottom="16dp" />
+
+              <ListView
+                  android:id="@+id/app_list"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent"
+                  android:divider="#21262D"
+                  android:dividerHeight="1dp" />
+          </LinearLayout>
+          EOF
+
+          # 7. MainActivity.java
+          cat << 'EOF' > dpz_app/app/src/main/java/com/dpz/cloneapp/MainActivity.java
+          package com.dpz.cloneapp;
+
+          import android.content.Intent;
+          import android.content.pm.ApplicationInfo;
+          import android.content.pm.PackageManager;
+          import android.os.Bundle;
+          import android.widget.ArrayAdapter;
+          import android.widget.ListView;
+          import android.widget.Toast;
+          import androidx.appcompat.app.AppCompatActivity;
+          import java.util.ArrayList;
+          import java.util.List;
+
+          public class MainActivity extends AppCompatActivity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+
+                  ListView listView = findViewById(R.id.app_list);
+                  PackageManager pm = getPackageManager();
+                  List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
+
+                  List<String> appNames = new ArrayList<>();
+                  List<String> packageNames = new ArrayList<>();
+
+                  for (ApplicationInfo appInfo : packages) {
+                      if (pm.getLaunchIntentForPackage(appInfo.packageName) != null) {
+                          appNames.add("⚡ " + pm.getApplicationLabel(appInfo).toString());
+                          packageNames.add(appInfo.packageName);
+                      }
+                  }
+
+                  ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, appNames);
+                  listView.setAdapter(adapter);
+
+                  listView.setOnItemClickListener((parent, view, position, id) -> {
+                      String pkg = packageNames.get(position);
+                      Intent launchIntent = pm.getLaunchIntentForPackage(pkg);
+                      if (launchIntent != null) {
+                          Toast.makeText(this, "Launching in DPZ Space...", Toast.LENGTH_SHORT).show();
+                          startActivity(launchIntent);
+                      }
+                  });
+              }
+          }
+          EOF
 
       - name: Apply Custom DPZ Logo
         run: |
           if [ -f "ic_launcher.png" ]; then
-            find dpz_core -path "*/src/main/res/mipmap-*" -name "ic_launcher*.png" -exec cp ic_launcher.png {} \;
+            cp ic_launcher.png dpz_app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          else
+            # Fallback icon if ic_launcher.png not uploaded yet
+            curl -sL "https://via.placeholder.com/512/0066FF/FFFFFF.png?text=DPZ" -o dpz_app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           fi
 
       - name: Build DPZ APK
         run: |
-          cd dpz_core
-          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
-          if [ -n "$GRADLEW_PATH" ]; then
-            cd "$(dirname "$GRADLEW_PATH")"
-            chmod +x gradlew
-            ./gradlew assembleDebug --no-daemon
-          else
-            BUILD_GRADLE=$(find . -name "settings.gradle*" | head -n 1)
-            cd "$(dirname "$BUILD_GRADLE")"
-            gradle assembleDebug --no-daemon
-          fi
+          cd dpz_app
+          gradle wrapper --gradle-version 8.4
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload DPZ Clone APK
         uses: actions/upload-artifact@v4
         with:
           name: DPZ-Clone-App
-          path: dpz_core/**/build/outputs/apk/debug/*.apk
+          path: dpz_app/app/build/outputs/apk/debug/app-debug.apk
+          
