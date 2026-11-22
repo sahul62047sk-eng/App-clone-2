@@ -25,7 +25,14 @@ jobs:
           mkdir -p dpz_app/app/src/main/java/com/dpz/cloneapp
           mkdir -p dpz_app/app/src/main/res/layout
           mkdir -p dpz_app/app/src/main/res/values
+          mkdir -p dpz_app/app/src/main/res/drawable
           mkdir -p dpz_app/app/src/main/res/mipmap-xxxhdpi
+
+          # 0. gradle.properties
+          cat << 'EOF' > dpz_app/gradle.properties
+          android.useAndroidX=true
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          EOF
 
           # 1. settings.gradle
           cat << 'EOF' > dpz_app/settings.gradle
@@ -54,7 +61,7 @@ jobs:
           }
           EOF
 
-          # 3. App build.gradle
+          # 3. App build.gradle (No Kotlin conflict)
           cat << 'EOF' > dpz_app/app/build.gradle
           plugins {
               id 'com.android.application'
@@ -81,7 +88,6 @@ jobs:
           }
           dependencies {
               implementation 'androidx.appcompat:appcompat:1.6.1'
-              implementation 'com.google.android.material:material:1.11.0'
           }
           EOF
 
@@ -109,7 +115,7 @@ jobs:
           </manifest>
           EOF
 
-          # 5. strings.xml & colors.xml & themes.xml
+          # 5. strings.xml, colors.xml & themes.xml
           cat << 'EOF' > dpz_app/app/src/main/res/values/strings.xml
           <resources>
               <string name="app_name">DPZ Clone App</string>
@@ -128,17 +134,26 @@ jobs:
 
           cat << 'EOF' > dpz_app/app/src/main/res/values/themes.xml
           <resources>
-              <style name="Theme.DPZClone" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+              <style name="Theme.DPZClone" parent="Theme.AppCompat.NoActionBar">
                   <item name="colorPrimary">@color/dpz_blue</item>
-                  <item name="colorPrimaryVariant">@color/dpz_dark</item>
-                  <item name="colorOnPrimary">@color/white</item>
+                  <item name="colorPrimaryDark">@color/dpz_dark</item>
+                  <item name="colorAccent">@color/dpz_cyan</item>
                   <item name="android:windowBackground">@color/dpz_dark</item>
-                  <item name="android:statusBarColor">@color/dpz_dark</item>
               </style>
           </resources>
           EOF
 
-          # 6. activity_main.xml (Custom Dark + Electric Blue UI)
+          # 6. Custom Card Background
+          cat << 'EOF' > dpz_app/app/src/main/res/drawable/card_bg.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <shape xmlns:android="http://schemas.android.com/apk/res/android">
+              <solid android:color="#161B22" />
+              <corners android:radius="12dp" />
+              <stroke android:width="1dp" android:color="#0066FF" />
+          </shape>
+          EOF
+
+          # 7. activity_main.xml & list_item.xml
           cat << 'EOF' > dpz_app/app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -153,14 +168,14 @@ jobs:
                   android:layout_height="wrap_content"
                   android:text="DPZ CLONE HUB"
                   android:textColor="@color/dpz_cyan"
-                  android:textSize="22sp"
+                  android:textSize="24sp"
                   android:textStyle="bold"
                   android:layout_marginBottom="4dp" />
 
               <TextView
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:text="Select an app to launch in DPZ Space"
+                  android:text="Tap any app to clone & launch in DPZ Space"
                   android:textColor="#8B949E"
                   android:textSize="13sp"
                   android:layout_marginBottom="16dp" />
@@ -169,12 +184,25 @@ jobs:
                   android:id="@+id/app_list"
                   android:layout_width="match_parent"
                   android:layout_height="match_parent"
-                  android:divider="#21262D"
-                  android:dividerHeight="1dp" />
+                  android:divider="@android:color/transparent"
+                  android:dividerHeight="10dp" />
           </LinearLayout>
           EOF
 
-          # 7. MainActivity.java
+          cat << 'EOF' > dpz_app/app/src/main/res/layout/list_item.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+              android:id="@+id/item_text"
+              android:layout_width="match_parent"
+              android:layout_height="wrap_content"
+              android:background="@drawable/card_bg"
+              android:padding="16dp"
+              android:textColor="#FFFFFF"
+              android:textSize="16sp"
+              android:textStyle="bold" />
+          EOF
+
+          # 8. MainActivity.java
           cat << 'EOF' > dpz_app/app/src/main/java/com/dpz/cloneapp/MainActivity.java
           package com.dpz.cloneapp;
 
@@ -204,19 +232,19 @@ jobs:
 
                   for (ApplicationInfo appInfo : packages) {
                       if (pm.getLaunchIntentForPackage(appInfo.packageName) != null) {
-                          appNames.add("⚡ " + pm.getApplicationLabel(appInfo).toString());
+                          appNames.add("⚡  " + pm.getApplicationLabel(appInfo).toString());
                           packageNames.add(appInfo.packageName);
                       }
                   }
 
-                  ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, appNames);
+                  ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.list_item, R.id.item_text, appNames);
                   listView.setAdapter(adapter);
 
                   listView.setOnItemClickListener((parent, view, position, id) -> {
                       String pkg = packageNames.get(position);
                       Intent launchIntent = pm.getLaunchIntentForPackage(pkg);
                       if (launchIntent != null) {
-                          Toast.makeText(this, "Launching in DPZ Space...", Toast.LENGTH_SHORT).show();
+                          Toast.makeText(this, "Opening in DPZ Clone Space...", Toast.LENGTH_SHORT).show();
                           startActivity(launchIntent);
                       }
                   });
@@ -224,13 +252,11 @@ jobs:
           }
           EOF
 
-      - name: Apply Custom DPZ Logo
+      - name: Apply & Optimize Custom DPZ Logo
         run: |
           if [ -f "ic_launcher.png" ]; then
-            cp ic_launcher.png dpz_app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          else
-            # Fallback icon if ic_launcher.png not uploaded yet
-            curl -sL "https://via.placeholder.com/512/0066FF/FFFFFF.png?text=DPZ" -o dpz_app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+            sudo apt-get update && sudo apt-get install -y imagemagick
+            convert ic_launcher.png -resize 192x192 PNG32:dpz_app/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           fi
 
       - name: Build DPZ APK
