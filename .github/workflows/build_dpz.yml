@@ -61,7 +61,7 @@ jobs:
           }
           EOF
 
-          # 3. App build.gradle (No Kotlin conflict)
+          # 3. App build.gradle
           cat << 'EOF' > dpz_app/app/build.gradle
           plugins {
               id 'com.android.application'
@@ -153,7 +153,7 @@ jobs:
           </shape>
           EOF
 
-          # 7. activity_main.xml & list_item.xml
+          # 7. activity_main.xml & list_item.xml (Fixed XML entity)
           cat << 'EOF' > dpz_app/app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -175,7 +175,7 @@ jobs:
               <TextView
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:text="Tap any app to clone & launch in DPZ Space"
+                  android:text="Tap any app to clone &amp; launch in DPZ Space"
                   android:textColor="#8B949E"
                   android:textSize="13sp"
                   android:layout_marginBottom="16dp" />
